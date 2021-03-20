@@ -1,0 +1,385 @@
+Hibernate
+	is a framework for Data access.
+	Model (MVC)
+	data definition and data access code should be part of Model.
+
+hibernate libraries are "jar" files
+	in maven project there are dependencies
+
+
+hibernate.cfg.xml
+
+entity1.hbm.xml
+entity2.hbm.xml
+
+in java, wherever you see xml configuration, there might be "annotations"
+
+remember in servlets,
+	web.xml		(where we configure a servlet or filter)
+	
+	we have annotations to do the same 
+
+similarly, wherever we use hbm.xml configuration, we have annotations to do the same
+
+1) hibernate.cfg.xml
+	is a configuration file that is used by admins to update the connection information
+		driver, url, username, password
+		dialect	(why? because, hibernate is same for any type of rdbms. we inform hibernate, to write sql code according to the rdbms)
+
+	there are some functions like
+		to_char
+		to_date
+		
+		these functions do not work for mysql. they work only for oracle.
+
+	dialect is a slang of SQL. 
+		t-sql	 is used by Microsoft sql server 
+		i-sql	is used by oracle
+		mysql	is different
+
+	sql is slightly different for different RDBMS
+
+	that difference is Dialect
+
+	when you ask hibernate to write SQL queries, you should inform hibernate (the dialect) to write sql correct to the rdbms
+
+1) There must be an entity class.
+	i) public class (must be inside a package)
+	ii) non public data members
+	iii) getters and setters		(getters are compulsory if you map the properties to columns)
+	iv) no arg constructor is compulsory
+	
+
+While learning advanced concepts,
+	we can try 
+		entities having relationships like
+		1 to 1
+		1 to M
+		M to 1
+		M to M
+
+There are advanced options to specify 1 table per 1 class or 1 table per class hierarchy
+
+It is advisable to keep the classes based on normalized table structure
+
+why?
+	for every table, if there is a class, how does it help?
+
+	if you run 	select * from movie
+
+	you get some 10 records
+	to represent each record, you need a user defined type. That is the class Movie
+
+	
+-----------------------
+
+
+
+if xml file is present in src folder
+
+	we can refer any class
+		model.Movie
+
+	from src, package name . class name
+
+but if xml file is inside the folder
+		Movie
+	no package name, because, xml file and class are in same folder
+
+but if there are classes in another folder, then they cannot be refered
+
+
+----------------------
+Task:
+	create a maven project "quickstart" archetype
+	and add the below dependencies
+				<dependency>
+			<groupId>com.oracle.ojdbc</groupId>
+			<artifactId>ojdbc8</artifactId>
+			<version>19.3.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>4.0.1.Final</version>
+		</dependency>
+
+	use yesterday's code and configuration and run the dao to test it
+
+------------------------------------------
+
+
+Whenever we do DML, we need transaction
+
+when we do read operations, we do not need transactions
+
+
+session
+	persist()	this method can be used to reflect the changes done in the entity object to the database
+			can also be used for
+				insert
+				update
+
+	save()		this is better method because, when we store an object (add a record in table), we are creating a new record,
+			we get auto generated ID
+	save method returns that id
+
+	save() method does not raise exception if you give value for auto generated id
+	it ignores the given id and uses generated id
+
+
+Persist:
+--------
+		only managed entities can be persist to the db
+		but in our prev example, we did not give a managed entity.
+		still how it was stored. 
+		we created a movie object without primary key value. WIthout primary key value, it is not referring to any object in the db table.
+		so it is understood that a new object.
+
+		BUT IF YOU SET VALUE FOR ID ALSO, Then you will get "detached" entity error
+
+		detached entity passed to persist(this error occurs by persist method. (Save do not give this error))
+
+
+what is 
+	detached entity
+	managed entity
+
+
+if you create an object of an entity class, then it is detached entity.
+	why? because, it is not synchronized with db table row.
+
+if i find an object from db table row, then it is a managed entity.
+	this is sync with the row in the db table
+
+if i create an object of entity, but i do not set primary key value,
+	then it is a new entity (not detached)
+
+new entities or managed entities can be passed to "persist"
+
+but after a new entity is "persist" into the db table, it becomes managed entity
+
+
+How to update an entity?
+	do not create an object. Rather, obtain the object from the db table
+	set new values using setter methods
+
+	then persist
+
+
+session.get(Movie.class,id);			//get method is used only to find an enitity by primary key value
+
+get method returns Object, narrow it to Movie
+use setter methods to update the changes
+and then 
+	persist			(managed entity is passed)
+
+
+Task:
+	Create all the
+		CRUD methods in Dao 
+	and test the methods in App.java
+
+
+
+---------------------------------
+How to use annotations instead of hibernate mapping file?
+
+Look at this hbm.xml file:
+	we inform hibernate that 
+   <class name = "mla.mar_20_1.model.Movie" table = "MOVIE">
+
+		the class name is "mla.mar_20_1.model.Movie"
+		the corresponding table name is "MOVIE"
+
+The same can be done as:
+
+@Entity
+@Table (name="MOVIE")
+class Movie
+{
+
+
+-----------
+      <id name = "id" type = "int" column = "id">
+         <generator class="sequence"/>
+      </id>
+
+the above tag informs hibernate that,
+	the primary key FIELD is "id" and corresponding table column name is "id"
+and the strategy for generating the id value is "sequence"
+
+the same can be done as:
+
+@Id
+@GeneratedValue(strategy=GenerationType.SEQUENCE)
+private Integer id;
+
+------------
+      <property name = "name" column = "name" type = "string"/>
+
+	the above tag informs that the property "name" is mapped to a column called "name"
+
+the same can be done as:
+
+@Column (name="name")
+private String name;
+
+In hibernate.cfg.xml file,
+	we refer to the hibernate mapping file as:
+
+			<mapping resource="movie.hbm.xml" />
+
+
+The same will be changed (when we use annotation and not using hbm xml file)
+
+		<mapping class="mla.mar_20_1.model.Movie" />
+
+
+
+-------------
+@Entity
+class Actor
+
+this annotation informs hibernate that a table should be created for Actor class. 
+If @Table annotation is not found, then automatically the table name is Actor (class name)
+
+
+
+
+@Entity
+//@Table(name="Actor")
+public class Actor {
+	private Integer actorId;
+	private String firstName;
+	private String lastName;
+
+Notice that we have not used @Column annotation here. THat means the column names automatically be same as property names
+
+
+	SimpleDateFormat sdf		for a global variable. sdf became a column
+
+--------------------------------
+In hibernate.cfg.xml file,
+	<mapping class="mla.mar_20_1.model.Actor" />
+
+instead,
+	in connection factory,
+
+	config.addAnnotatedClass(mla.mar_20_1.model.Actor.class);
+
+
+--------------------------------
+
+Task:
+	create one more entity using Annotations
+	and refer the entity class in 
+		hibernate.cfg.xml
+		(or)
+		config.addAnnotatedClass(mla.mar_20_1.model.Actor.class);
+
+
+
+---------------------
+so far, we have learnt to use hibernate to 
+	CREATE
+	READ
+	UPDATE
+	DELETE
+
+we also learnt to read by ID
+
+some times, we have to do complex operations like
+	find entity by field other than primary key.
+
+	ex:	find movie by release date
+		(or)	find actor by last name
+
+how to do that?
+
+	we may do that using
+		1) criteria
+		2) query
+
+remember, in both of the above techniques, we are NOT referring to the 
+		table name
+		column name
+
+but we are referring to the 
+		entity class name
+		properties name
+
+Activity:
+	1) find entities by other than primary key using Criteria
+	2) find entities by multiple conditions	
+			firstName is rama	and lastName is kumar
+
+	3) find entities using like method		firstName like 'raj'
+
+
+
+TNUMBER               NOT NULL VARCHAR2(6)  
+ACNUMBER                       VARCHAR2(6)  
+DOT                            DATE         
+MEDIUM_OF_TRANSACTION          VARCHAR2(20) 
+TRANSACTION_TYPE               VARCHAR2(20) 
+TRANSACTION_AMOUNT             NUMBER(38)  
+
+class TranDetails
+{
+
+}
+
+
+
+when i call create method from another program
+
+Integer customerId=null;
+try
+{
+	customerId=dao.create();
+}
+catch
+////		due to primary key duplicate conflit, exception occurred
+
+
+after catch
+we continue
+
+if(customerId==null)
+		understand that the create (Insert) effort failed
+
+
+
+1) find how many pages?
+	total rows/page size
+
+
+first page means start index is 0
+
+
+pageNo=2			2-1		* 4	=	4 is the start index
+startIndex= 	
+
+pageNo-1	* pageSize
+
+pageNo=1
+
+	1=1		0*4	=0 is the sgtart index of first page
+
+2-1		* 4		=4 is the start index of second page
+
+
+
+
+
+tASK:
+	Create a dynamic web application
+	and use maven dependencies 
+
+	create JSP pagination of size 3 
+	Hint:
+		criteria.setFirstResult(startIndex);
+		criteria.setMaxResults(noOfRows);
+
